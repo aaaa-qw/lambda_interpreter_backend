@@ -61,5 +61,3 @@ tests:
     - lambdainterpreter
     - hspec
     - hspec-discover 
-    - QuickCheck 
-    - HUnit
