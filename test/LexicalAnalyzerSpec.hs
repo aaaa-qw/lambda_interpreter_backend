@@ -16,9 +16,12 @@ module LexicalAnalyzerSpec where
                 autoParentheses "a b (lambda x y . x y z) d" `shouldBe` "(a b (lambda x y . (x y z)) d)"
 
             it "Contains inner function" $ do
-                autoParentheses "a b (lambda x . y (lambda x . x s y)) def" `shouldBe` "(a b (lambda x . (y (lambda x . (x s y)))) def"
+                autoParentheses "a b (lambda x . y (lambda x . x s y)) def" `shouldBe` "(a b (lambda x . (y (lambda x . (x s y)))) def)"
 
             it "Declaration with Expression" $ do
                 autoParentheses "Let newVar = a b (lambda x y . y(x)y)lambda d . d(s)" 
-                        `shouldBe` "Let newVar = (a b (lambda x y . (y(x)y))lambda d . (d(s))"
+                        `shouldBe` "Let newVar = (a b (lambda x y . (y(x)y))lambda d . (d(s)))"
+            
+            it "should remove excessive whitespace" $ do
+                autoParentheses "    a   b    c    lambda x . x   " `shouldBe` "(a b c lambda x . (x))"
             
