@@ -1,0 +1,25 @@
+image: haskell:9.2-slim
+
+stages:
+  - build
+  - test
+
+variables:
+  STACK_ROOT: "${CI_PROJECT_DIR}/.stack"
+
+cache:
+  paths:
+    - .stack
+    - .stack-work
+    - target
+
+build:
+  stage: build
+  script:
+    - stack setup --system-ghc
+    - stack install --local-bin-path target --system-ghc
+
+test:
+  stage: test
+  script: 
+    - stack test
