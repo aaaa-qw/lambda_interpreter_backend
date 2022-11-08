@@ -27,6 +27,7 @@ library
   exposed-modules:
       LexicalAnalyzer
       Lib
+      Parser
   other-modules:
       Paths_lambdainterpreter
   hs-source-dirs:
@@ -54,6 +55,7 @@ test-suite lambdainterpreter-test
   main-is: Spec.hs
   other-modules:
       LexicalAnalyzerSpec
+      ParserSpec
       Paths_lambdainterpreter
   hs-source-dirs:
       test
