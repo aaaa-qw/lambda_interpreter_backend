@@ -22,6 +22,11 @@ module LexicalAnalyzerSpec where
                 autoParentheses "Let newVar = a b (lambda x y . y(x)y)lambda d . d(s)" 
                         `shouldBe` "Let newVar = (a b (lambda x y . (y(x)y))lambda d . (d(s)))"
             
+            it "Does not change empty string" $ do
+                autoParentheses "" `shouldBe` ""
+            
             it "should remove excessive whitespace" $ do
                 autoParentheses "    a   b    c    lambda x . x   " `shouldBe` "(a b c lambda x . (x))"
-            
+        
+            it "white space only" $ do
+                autoParentheses "       " `shouldBe` ""

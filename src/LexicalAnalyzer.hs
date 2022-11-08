@@ -2,6 +2,7 @@ module LexicalAnalyzer (autoParentheses) where
 
 autoParentheses :: String -> String
 autoParentheses s = case break (=='=') (dropWhile (==' ') s) of
+    ([], []) -> ""
     (expr, []) -> formatExpr expr
     (decl, expr) -> trim decl ++ " = " ++ (formatExpr . dropWhile (==' ') . tail) expr
 
