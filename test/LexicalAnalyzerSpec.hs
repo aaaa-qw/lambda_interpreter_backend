@@ -19,7 +19,7 @@ module LexicalAnalyzerSpec where
                 autoParentheses "a b (lambda x . y (lambda x . x s y)) def" `shouldBe` "(a b (lambda x . (y (lambda x . (x s y)))) def)"
 
             it "Declaration with Expression" $ do
-                autoParentheses "Let newVar = a b (lambda x y . y(x)y)lambda d . d(s)" 
+                autoParentheses "  Let   newVar   =   a b (lambda x y . y(x)y)lambda d . d(s)" 
                         `shouldBe` "Let newVar = (a b (lambda x y . (y(x)y))lambda d . (d(s)))"
             
             it "Does not change empty string" $ do

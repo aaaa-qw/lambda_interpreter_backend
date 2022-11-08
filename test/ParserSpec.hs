@@ -16,7 +16,7 @@ module ParserSpec where
                                 (AppE' (IdE "c") E'NoCnt)))
             
             it "One function only, no Application" $ do
-                parse "(lambda x . x)" `shouldBe` 
+                parse "(lambda x . (x))" `shouldBe` 
                     ProgE
                         (AppE (Funct (Params ["x"]) (AppE (IdE "x") E'NoCnt) ) E'NoCnt)
             
@@ -25,39 +25,56 @@ module ParserSpec where
                     ProgE
                         (AppE (IdE "a") 
                             (AppE' (IdE "b")
-                                (AppE' (Funct (Params ["x", "y"]) (AppE (IdE "x") (AppE' (IdE "y") (AppE' (IdE "z") E'NoCnt)))) 
+                                (AppE' (AppE (Funct (Params ["x", "y"]) (AppE (IdE "x") (AppE' (IdE "y") (AppE' (IdE "z") E'NoCnt)))) E'NoCnt) 
                                     (AppE' (IdE "d") E'NoCnt))))
+            it "inner function only" $ do
+                parse "(lambda x.((lambda y.(x s y))c))" `shouldBe`
+                    ProgE 
+                        (AppE 
+                            (Funct (Params ["x"]) 
+                                (AppE 
+                                    (AppE (Funct (Params ["y"]) 
+                                        (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))) E'NoCnt) 
+                                    (AppE' (IdE "c") E'NoCnt)
+                                )
+                            ) 
+                            E'NoCnt
+                        )
 
-            it "Contains inner function" $ do
-                parse "(a b (lambda x . (lambda y . (x s y))) def)" `shouldBe` 
+            it "Inner function with outer apllication" $ do
+                parse "(a b (lambda x . ((lambda y . (x s y))c)) def)" `shouldBe` 
                     ProgE
-                        (AppE (IdE "a")
-                            (AppE' (IdE "b")
-                                (AppE' 
-                                    (
-                                        Funct (Params ["x"])
+                        (AppE (IdE "a") (AppE' (IdE "b") 
+                        (
+                            AppE'                         
+                                (AppE 
+                                    (Funct (Params ["x"]) 
                                         (AppE 
-                                            (
-                                                Funct (Params ["y"]) 
-                                                (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))
-                                            ) E'NoCnt)
-                                    )
-                                    (AppE' (IdE "def") E'NoCnt)
-                                )))
+                                            (AppE (Funct (Params ["y"]) 
+                                                (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))) E'NoCnt) 
+                                            (AppE' (IdE "c") E'NoCnt)
+                                        )
+                                    ) 
+                                    E'NoCnt
+                                )
+                                (AppE' (IdE "def") E'NoCnt)
+                        )))
 
             it "Declaration with Expression" $ do
-                parse "Let newVar = (a b (lambda x . (lambda y . (x s y))) def)" `shouldBe`
+                parse "let newVar = (a b (lambda x . ((lambda y . (x s y))c)) def)" `shouldBe`
                     Decl "newVar" 
-                        (AppE (IdE "a")
-                            (AppE' (IdE "b")
-                                (AppE' 
-                                    (
-                                        Funct (Params ["x"])
+                        (AppE (IdE "a") (AppE' (IdE "b") 
+                        (
+                            AppE'                         
+                                (AppE 
+                                    (Funct (Params ["x"]) 
                                         (AppE 
-                                            (
-                                                Funct (Params ["y"]) 
-                                                (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))
-                                            ) E'NoCnt)
-                                    )
-                                    (AppE' (IdE "def") E'NoCnt)
-                                )))
+                                            (AppE (Funct (Params ["y"]) 
+                                                (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))) E'NoCnt) 
+                                            (AppE' (IdE "c") E'NoCnt)
+                                        )
+                                    ) 
+                                    E'NoCnt
+                                )
+                                (AppE' (IdE "def") E'NoCnt)
+                        )))
