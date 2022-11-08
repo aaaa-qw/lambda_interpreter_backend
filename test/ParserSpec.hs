@@ -5,6 +5,9 @@ module ParserSpec where
     spec :: Spec
     spec = do
         describe "Parser.parse" $ do
+            it "Empty Expression" $ do 
+                parse "" `shouldBe` PNoCnt
+
             it "Application only, no function" $ do
                 parse "(a b c)" `shouldBe` 
                     ProgE 
