@@ -6,27 +6,10 @@ module LexicalAnalyzerSpec where
     spec :: Spec
     spec = do
         describe "LexicalAnalyzer.autoParentheses" $ do
-            it "Application only, no function" $ do
-                autoParentheses "a b c" `shouldBe` "(a b c)"
-            
-            it "One function only, no Application" $ do
-                autoParentheses "lambda x . x" `shouldBe` "(lambda x . (x))"
-            
-            it "Function with application" $ do
-                autoParentheses "a b (lambda x y . x y z) d" `shouldBe` "(a b (lambda x y . (x y z)) d)"
+            it "empty string" $ do
+                autoParentheses "" `shouldBe` "()"
+            it "non empty expression" $ do
+                autoParentheses "a b (lambda x . x) d" `shouldBe` "(a b(lambda x . x) d)"
 
-            it "Contains inner function" $ do
-                autoParentheses "a b (lambda x . y (lambda x . x s y)) def" `shouldBe` "(a b (lambda x . (y (lambda x . (x s y)))) def)"
-
-            it "Declaration with Expression" $ do
-                autoParentheses "  Let   newVar   =   a b (lambda x y . y(x)y)lambda d . d(s)" 
-                        `shouldBe` "Let newVar = (a b (lambda x y . (y(x)y))lambda d . (d(s)))"
-            
-            it "Does not change empty string" $ do
-                autoParentheses "" `shouldBe` ""
-            
-            it "should remove excessive whitespace" $ do
-                autoParentheses "    a   b    c    lambda x . x   " `shouldBe` "(a b c lambda x . (x))"
-        
-            it "white space only" $ do
-                autoParentheses "       " `shouldBe` ""
+            it "declaration" $ do
+                autoParentheses "let newVar = a b (lambda d. (lambda x.x) d)c" `shouldBe` "let newVar = a b (lambda d. (lambda x.x) d)c"  
