@@ -1,4 +1,4 @@
-module ParserSpec where
+module ParserSpec (spec) where
     import Test.Hspec ( describe, it, shouldBe, Spec )
     import Parser
     
