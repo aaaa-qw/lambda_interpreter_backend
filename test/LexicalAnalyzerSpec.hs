@@ -9,9 +9,9 @@ module LexicalAnalyzerSpec (spec) where
             it "empty string" $ do
                 autoParentheses "" `shouldBe` ""
             it "should enclosed expression inside parenthesis" $ do
-                autoParentheses "a b(lambda x .x) d" `shouldBe` "(a b(lambda x .x) d)"
+                autoParentheses "a b(lambda x .x) d" `shouldBe` "(a b(lambda x.x)d)"
             it "should remove unnecessary whitespace" $ do
-                autoParentheses "a  b  (  lambda   x   y   .   d ( e f ) s    t     )     g" `shouldBe` "(a b(lambda x y.d(e f)s t)g)"
+                autoParentheses "a  b  (  lambda   x   y   .   d ( e f ) s    t     )     g           " `shouldBe` "(a b(lambda x y.d(e f)s t)g)"
             it "declaration" $ do
                 autoParentheses "     let   newVar     =    a    b   (   lambda   d   . (   lambda    x   .   x   ) d   )    c   e   f    " 
-                    `shouldBe` "let newVar =(a b(lambda d.(lambda x.x)d)c e f)"  
+                    `shouldBe` "let newVar=(a b(lambda d.(lambda x.x)d)c e f)"  
