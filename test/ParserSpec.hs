@@ -1,80 +1,70 @@
 module ParserSpec (spec) where
     import Test.Hspec ( describe, it, shouldBe, Spec )
-    import Parser
+    import Parser ( parse, Expr(ENoCnt, E, Fun, Id), Program(ProgE, Decl) )
     
     spec :: Spec
     spec = do
         describe "Parser.parse" $ do
             it "Empty Expression" $ do 
-                parse "" `shouldBe` PNoCnt
+                parse "" `shouldBe` Right (ProgE ENoCnt)
 
             it "Application only, no function" $ do
                 parse "(a b c)" `shouldBe` 
-                    ProgE 
-                        (AppE (IdE "a") 
-                            (AppE' (IdE "b") 
-                                (AppE' (IdE "c") E'NoCnt)))
+                    Right (ProgE 
+                        (E (Id "a"  (Id "b" (Id "c" ENoCnt))) ENoCnt))            
             
             it "One function only, no Application" $ do
-                parse "(lambda x . (x))" `shouldBe` 
-                    ProgE
-                        (AppE (Funct (Params ["x"]) (AppE (IdE "x") E'NoCnt) ) E'NoCnt)
-            
+                parse "(lambda x.x)" `shouldBe` 
+                    Right (ProgE
+                        (Fun ["x"] (Id "x" ENoCnt) ENoCnt))   
+                                 
             it "Function with application" $ do
-                parse "(a b (lambda x y . (x y z)) d)" `shouldBe` 
-                    ProgE
-                        (AppE (IdE "a") 
-                            (AppE' (IdE "b")
-                                (AppE' (AppE (Funct (Params ["x", "y"]) (AppE (IdE "x") (AppE' (IdE "y") (AppE' (IdE "z") E'NoCnt)))) E'NoCnt) 
-                                    (AppE' (IdE "d") E'NoCnt))))
+                parse "(a b(lambda x y.(x y z))d)" `shouldBe` 
+                    Right (ProgE
+                        (E (Id "a" (
+                            Id "b" 
+                            (Fun ["x", "y"] (E (Id "x" (Id "y" (Id "z" ENoCnt))) ENoCnt) (Id "d" ENoCnt)) 
+                        )) ENoCnt))
+
             it "inner function only" $ do
-                parse "(lambda x.((lambda y.(x s y))c))" `shouldBe`
-                    ProgE 
-                        (AppE 
-                            (Funct (Params ["x"]) 
-                                (AppE 
-                                    (AppE (Funct (Params ["y"]) 
-                                        (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))) E'NoCnt) 
-                                    (AppE' (IdE "c") E'NoCnt)
+                parse "(lambda x.(lambda y.x s y)c)" `shouldBe`
+                    Right (ProgE 
+                        (Fun ["x"] (Fun ["y"] (Id "x" (Id "s" (Id "y" ENoCnt))) (Id "c" ENoCnt)) ENoCnt))
+            
+            it "Parenthesis affect evaluation" $ do
+                parse "(a b(c d)e(f g)h)" `shouldBe`
+                    Right (ProgE
+                        (E (Id "a" (Id "b" 
+                            (
+                                E (Id "c" (Id "d" ENoCnt)) (Id "e" 
+                                    (E (Id "f" (Id "g" ENoCnt)) (Id "h" ENoCnt))
                                 )
-                            ) 
-                            E'NoCnt
-                        )
-
+                            )
+                        )) ENoCnt))
+        
             it "Inner function with outer apllication" $ do
-                parse "(a b (lambda x . ((lambda y . (x s y))c)) def)" `shouldBe` 
-                    ProgE
-                        (AppE (IdE "a") (AppE' (IdE "b") 
-                        (
-                            AppE'                         
-                                (AppE 
-                                    (Funct (Params ["x"]) 
-                                        (AppE 
-                                            (AppE (Funct (Params ["y"]) 
-                                                (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))) E'NoCnt) 
-                                            (AppE' (IdE "c") E'NoCnt)
-                                        )
-                                    ) 
-                                    E'NoCnt
-                                )
-                                (AppE' (IdE "def") E'NoCnt)
-                        )))
-
+                parse "(a b(lambda x.(lambda y.x s y)c)def)" `shouldBe` 
+                    Right (ProgE 
+                        (E (Id "a" (Id "b" 
+                            (Fun ["x"]  
+                                (Fun ["y"] (Id "x" (Id "s" (Id "y" ENoCnt))) (Id "c" ENoCnt))
+                            (Id "def" ENoCnt))
+                        )) ENoCnt))
+        
             it "Declaration with Expression" $ do
-                parse "let newVar = (a b (lambda x . ((lambda y . (x s y))c)) def)" `shouldBe`
-                    Decl "newVar" 
-                        (AppE (IdE "a") (AppE' (IdE "b") 
-                        (
-                            AppE'                         
-                                (AppE 
-                                    (Funct (Params ["x"]) 
-                                        (AppE 
-                                            (AppE (Funct (Params ["y"]) 
-                                                (AppE (IdE "x") (AppE' (IdE "s") (AppE' (IdE "y") E'NoCnt)))) E'NoCnt) 
-                                            (AppE' (IdE "c") E'NoCnt)
-                                        )
-                                    ) 
-                                    E'NoCnt
-                                )
-                                (AppE' (IdE "def") E'NoCnt)
-                        )))
+                parse "let newVar=(a b(lambda x.(lambda y.x s y)c)def)" `shouldBe`
+                    Right (Decl "newVar"  
+                        (E (Id "a" (Id "b" 
+                            (Fun ["x"]  
+                                (Fun ["y"] (Id "x" (Id "s" (Id "y" ENoCnt))) (Id "c" ENoCnt))
+                            (Id "def" ENoCnt))
+                        )) ENoCnt))
+
+            it "Function with \"\\\" definition" $ do
+                parse "(a b(\\x.(\\y.x s y)c)def)" `shouldBe` 
+                    Right (ProgE 
+                        (E (Id "a" (Id "b" 
+                            (Fun ["x"]  
+                                (Fun ["y"] (Id "x" (Id "s" (Id "y" ENoCnt))) (Id "c" ENoCnt))
+                            (Id "def" ENoCnt))
+                        )) ENoCnt))
