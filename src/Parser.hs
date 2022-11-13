@@ -2,46 +2,59 @@ module Parser where
 
 import Text.Parsec
 import Data.Functor.Identity ( Identity )
-import Control.Applicative hiding (many)
+import Control.Applicative (liftA3, liftA2)
 
-data Program = Decl String Expr | ProgE Expr | PNoCnt deriving (Eq, Show)
-data Expr = AppE Expr Expr'| IdE String | Funct Params Expr deriving (Eq, Show)
-data Expr' = AppE' Expr Expr' | E'NoCnt deriving (Eq, Show)
-newtype Params = Params [String] deriving (Eq, Show)
+data Program = Decl String Expr1 | ProgE Expr deriving (Eq, Show)
+data Expr = Id String Expr| E Expr1 Expr | Fun Params Expr1 Expr | ENoCnt deriving (Eq, Show)
+type Expr1 = Expr
+type Params = [String]
 
 ids :: ParsecT String u Identity [Char]
 ids = (:) <$> (letter :: ParsecT String u Identity Char) <*> many alphaNum
 
-ws :: ParsecT String u Identity Char
-ws = char ' '
-
 optWs :: ParsecT String u Identity ()
-optWs = Text.Parsec.optional (char ' ')
+optWs = optional (char ' ')
 
-parseProgram :: ParsecT String u Identity Program
-parseProgram = choice  [
-        eof >> return PNoCnt,
-        string "let" >> ws >> (Decl <$> ids) <*> (string " = " >> parseExpr),
-        ProgE <$> parseExpr
+functSym :: ParsecT String u Identity String
+functSym = choice [
+        string "lambda" <* char ' ',
+        string "\\"
+    ]
+
+parseFunc :: ParsecT String u Identity Expr
+parseFunc = functSym >> liftA3 Fun parseParams (char '.' >> parseExpr1) parseExpr 
+
+parseParams :: ParsecT String u Identity [String]
+parseParams = many (ids <* optWs)
+
+parseId :: ParsecT String u Identity Expr
+parseId = liftA2 Id ids (optWs >> parseExpr)
+
+parseE :: ParsecT String u Identity Expr
+parseE = liftA2 E parseExpr1 parseExpr
+
+parseExpr1 :: ParsecT String u Identity Expr
+parseExpr1 = choice [
+        parseId,
+        char '(' >> (parseFunc <|> parseE)
     ]
 
 parseExpr :: ParsecT String u Identity Expr
 parseExpr = choice [
-        char '(' >> optWs >> (AppE <$> parseExpr <*> (optWs >> parseExpr')),
-        string "lambda" >> ws >> (Funct <$> parseParams <*> (char '.' >> optWs >> parseExpr)),
-        IdE <$> ids
+        parseId,
+        char '(' >> (parseFunc <|> parseE),
+        char ')' >> return ENoCnt,
+        eof >> return ENoCnt
     ]
 
-parseExpr' :: ParsecT String u Identity Expr'
-parseExpr' = choice [
-        (char ')' >> return E'NoCnt) <* optWs,
-        AppE' <$> parseExpr <*> (optWs >> parseExpr')
+parseDecl :: ParsecT String u Identity Program
+parseDecl = liftA2 Decl (string "let " >> ids) (char '=' >> parseExpr1)
+
+parseProgram :: ParsecT String u Identity Program
+parseProgram = choice [
+        parseDecl,
+        ProgE <$> parseExpr
     ]
 
-parseParams :: ParsecT String u Identity Params
-parseParams = Params <$> some (ids <* optWs)
-
-parse :: String -> Program
-parse s = case Text.Parsec.parse parseProgram "" s of
-    Right program -> program
-    Left v -> Decl (show v) (IdE "a")
+parse :: String -> Either ParseError Program
+parse = Text.Parsec.parse parseProgram ""
