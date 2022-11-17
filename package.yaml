@@ -37,6 +37,8 @@ library:
   source-dirs: src
   dependencies:
     - parsec
+    - mtl
+    - containers
 
 executables:
   lambdainterpreter-exe:
@@ -61,3 +63,4 @@ tests:
     - lambdainterpreter
     - hspec
     - hspec-discover 
+    - containers
