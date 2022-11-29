@@ -2,7 +2,7 @@
 module Evaluator (replaceUnbound, betaReduce, evaluate, EvaluationError(..)) where
 
     import Control.Monad.State.Lazy
-    import Parser ( Expr(..), Program(..))
+    import Parser ( Expr(..), Program(..), unParse)
     import Data.List ( union )
     import Data.Map (Map)
     import qualified Data.Map as Map
@@ -52,7 +52,7 @@ module Evaluator (replaceUnbound, betaReduce, evaluate, EvaluationError(..)) whe
         case program of
 
             (Decl newVar nonEmptyExpr) -> case Map.lookup newVar tableSym of
-                Just expr' -> Left $ VariableAlreadyDefined $ newVar ++ " is already defined as " ++ show expr'
+                Just expr' -> Left $ VariableAlreadyDefined $ newVar ++ " is already defined as " ++ unParse expr' 
                 Nothing -> case (betaReduce maxEval . replaceUnbound tableSym) nonEmptyExpr of
                     Right expr' -> Right $ Decl newVar expr'
                     Left msg -> Left (ExceedMaxEval msg) 

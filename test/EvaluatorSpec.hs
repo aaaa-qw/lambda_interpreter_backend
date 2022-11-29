@@ -118,11 +118,11 @@ module EvaluatorSpec (spec) where
             it "Evaluate declaration; no error" $ do
                 evaluate 1000 Map.empty (Decl "a" (getExpr "(((lambda x.x)))")) `shouldBe`
                     Right (Decl "a" (Fun ["x"] (Id "x" ENoCnt) ENoCnt))
-            
+
             it "Evaluate declaration; evaluation reach maximum value" $ do
                 evaluate 1000 Map.empty (Decl "a" (getExpr "(lambda f.((lambda x.(f (x x)))(lambda x.(f (x x)))))(lambda x.x)")) `shouldSatisfy`
                     (\(Left (ExceedMaxEval _)) -> True)
-            
+
             it "Evaluate declaration; variable already defined" $ do
-                evaluate 1000 (Map.fromList [("a", Id "b" ENoCnt)]) (Decl "a" (getExpr "(((lambda x.x)))")) `shouldSatisfy`
-                    (\(Left (VariableAlreadyDefined _)) -> True)
+                evaluate 1000 (Map.fromList [("a", Id "b" ENoCnt)]) (Decl "a" (getExpr "(((lambda x.x)))")) `shouldBe`
+                    Left (VariableAlreadyDefined $ "a" ++ " is already defined as " ++ "b")
