@@ -1,6 +1,6 @@
 module ParserSpec (spec) where
     import Test.Hspec ( describe, it, shouldBe, Spec )
-    import Parser ( parse, Expr(ENoCnt, E, Fun, Id), Program(ProgE, Decl) )
+    import Parser ( parse, Expr(ENoCnt, E, Fun, Id), Program(ProgE, Decl), unParse )
     
     spec :: Spec
     spec = do
@@ -68,3 +68,31 @@ module ParserSpec (spec) where
                                 (Fun ["y"] (Id "x" (Id "s" (Id "y" ENoCnt))) (Id "c" ENoCnt))
                             (Id "def" ENoCnt))
                         )) ENoCnt))
+            
+        describe "Parser.unParse" $ do
+            it "Unparsing empty expression" $ do 
+                unParse ENoCnt `shouldBe` ""
+            
+            it "Unparsing application only" $ do
+                unParse (Id "a" (Id "b" (Id "c" ENoCnt))) `shouldBe` "a b c"
+            
+            it "Unparsing simple function only" $ do
+                unParse (Fun ["x"] (Id "x" (Id "a" ENoCnt)) ENoCnt) `shouldBe` "(\955x.x a)"
+            
+            it "Unparsing nested function" $ do
+                unParse (Fun ["x", "y"] (Id "x" (Fun ["a"] (Id "a" (Id "y" ENoCnt)) ENoCnt)) ENoCnt) `shouldBe`
+                    "(\955x y.x(\955a.a y))"
+            
+            it "Unparsing function with application" $ do
+                unParse (Id "a" (Fun ["x"] (Id "x" ENoCnt) (Id "b" ENoCnt))) `shouldBe` "a(\955x.x)b"
+            
+            it "Unparsing expression with important parenthesis" $ do
+                unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" ENoCnt))) `shouldBe` "a(b c)d"
+            
+            it "Unparsing expression with unnecessary parenthesis" $ do
+                unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" (E (Id "e" ENoCnt) (Id "f" ENoCnt))))) `shouldBe` 
+                    "a(b c)d e f"
+            
+            it "Unparsing expression with unnecessary parenthesis II" $ do
+                unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" (E (E (Id "e" ENoCnt) ENoCnt) (Id "f" ENoCnt))))) `shouldBe` 
+                    "a(b c)d e f"
