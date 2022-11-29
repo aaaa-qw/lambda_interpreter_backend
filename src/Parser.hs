@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Parser where
 
 import Text.Parsec
@@ -22,7 +23,7 @@ functSym = choice [
     ]
 
 parseFunc :: ParsecT String u Identity Expr
-parseFunc = functSym >> liftA3 Fun parseParams (char '.' >> parseExpr1) parseExpr 
+parseFunc = functSym >> liftA3 Fun parseParams (char '.' >> parseExpr1) parseExpr
 
 parseParams :: ParsecT String u Identity [String]
 parseParams = many (ids <* optWs)
@@ -58,3 +59,27 @@ parseProgram = choice [
 
 parse :: String -> Either ParseError Program
 parse = Text.Parsec.parse parseProgram ""
+
+unParse :: Expr -> String
+unParse p = case p of
+    ENoCnt -> ""
+    expr -> (dropWhile (==' ') . unParseE [""] "") expr
+    where
+        unParseE :: [String] -> String -> Expr -> String
+        unParseE acc last' ENoCnt = (formatter . unwords . reverse) (last':acc)
+        unParseE acc lst (Id val e2) = unParseE (val:acc) lst e2
+        unParseE acc lst (Fun params body e2) = unParseE (unParseE [[]] ")" body : "." : ("(\955" ++ unwords params) : acc) lst e2
+        unParseE acc lst (E (Id val ENoCnt) e2) = unParseE (val:acc) lst e2
+        unParseE acc lst (E (Fun params body ENoCnt) e2) = unParseE acc lst (Fun params body e2)
+        unParseE acc lst (E (E e1' ENoCnt) e2) = unParseE acc lst (E e1' e2)
+        unParseE acc lst (E e1 e2) = unParseE (unParseE ["("] ")" e1:acc) lst e2
+
+        --Will remove unnecassary whitespace and parenthesis
+        formatter :: String -> String
+        formatter = foldr op ""
+            where
+                op :: Char -> String -> String
+                op ' ' [] = []
+                op ' ' b = if (not . null) b && head b `elem` " ().\955" then b else ' ':b
+                op s b = if s `elem` "().\955" then s:dropWhile (==' ') b
+                            else s:b
