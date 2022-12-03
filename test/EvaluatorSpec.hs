@@ -69,11 +69,11 @@ module EvaluatorSpec (spec) where
                 betaReduce 1000 (getExpr "") `shouldBe` Right ENoCnt
 
             it "Application only" $ do
-                betaReduce 1000 (getExpr "(a b c)") `shouldBe` Right (Id "a" (Id "b" (Id "c" ENoCnt)))
+                betaReduce 1000 (getExpr "(a b c)") `shouldBe` Right (E (Id "a" (Id "b" (Id "c" ENoCnt))) ENoCnt)
 
             it "Application only with parenthesis" $ do
                 betaReduce 1000 (getExpr "(a b(c d)e)") `shouldBe`
-                    Right (Id "a" (Id "b" (E (Id "c" (Id "d" ENoCnt)) (Id "e" ENoCnt))))
+                    Right (E (Id "a" (Id "b" (E (Id "c" (Id "d" ENoCnt)) (Id "e" ENoCnt)))) ENoCnt)
 
             it "Function only" $ do
                 betaReduce 1000 (getExpr "(lambda x.x c)")  `shouldBe`
@@ -81,23 +81,23 @@ module EvaluatorSpec (spec) where
 
             it "Function with variable as arguments" $ do
                 betaReduce 1000 (getExpr "((lambda x y.y x)a b)") `shouldBe`
-                    Right (Id "b" (Id "a" ENoCnt))
+                    Right (E (Id "b" (Id "a" ENoCnt)) ENoCnt)
 
             it "Function with Function as argument" $ do
                 betaReduce 100 (getExpr "((lambda x y.x y)(lambda x.a x)b)") `shouldBe`
-                    Right (Id "a" (Id "b" ENoCnt))
+                    Right (E (Id "a" (Id "b" ENoCnt)) ENoCnt)
 
             it "Contains not reducible function" $ do
                 betaReduce 100 (getExpr "(a b(lambda x.x)c)") `shouldBe`
-                    Right (Id "a" (Id "b" (Fun ["x"] (Id "x" ENoCnt) (Id "c" ENoCnt))))
+                    Right (E (Id "a" (Id "b" (Fun ["x"] (Id "x" ENoCnt) (Id "c" ENoCnt)))) ENoCnt)
 
             it "Contains reducible and not reducible function" $ do
                 betaReduce 100 (getExpr "(a b(lambda x.x)c((lambda x.x)d))") `shouldBe`
-                    Right (Id "a" (Id "b" (Fun ["x"] (Id "x" ENoCnt) (Id "c" (Id "d" ENoCnt)))))
+                    Right (E (Id "a" (Id "b" (Fun ["x"] (Id "x" ENoCnt) (Id "c" (Id "d" ENoCnt))))) ENoCnt)
 
             it "Remove unnecessary parentheses after function application" $ do
                 betaReduce 100 (getExpr "(x((lambda a.a)b)c)") `shouldBe`
-                    Right (Id "x" (Id "b" (Id "c" ENoCnt)))
+                    Right (E (Id "x" (Id "b" (Id "c" ENoCnt))) ENoCnt)
 
             it "Unnecessary parentheses" $ do
                 betaReduce 1000 (getExpr "(((lambda x.x)))") `shouldBe`
@@ -109,7 +109,7 @@ module EvaluatorSpec (spec) where
         describe "Evaluator.evaluate" $ do
             it "Evaluate expression; no error" $ do
                 evaluate 1000 Map.empty (ProgE (getExpr "(x((lambda a.a)b)c)")) `shouldBe`
-                    Right (ProgE (Id "x'0" (Id "x'1" (Id "x'2" ENoCnt))))
+                    Right (ProgE (E (Id "x'0" (Id "x'1" (Id "x'2" ENoCnt))) ENoCnt))
 
             it "Evaluate expression maximum evaluation exceeded" $ do
                 evaluate 1000 Map.empty (ProgE (getExpr "(lambda f.((lambda x.(f (x x)))(lambda x.(f (x x)))))(lambda x.x)")) `shouldSatisfy`

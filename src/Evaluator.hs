@@ -91,11 +91,6 @@ module Evaluator (replaceUnbound, betaReduce, evaluate, EvaluationError(..)) whe
                     
                         ENoCnt -> return $ Right ENoCnt
                     
-                        (E e1 ENoCnt) -> do 
-                            (step, _) <- get
-                            put (step, True)
-                            betaReduce' e1 
-                    
                         (E e1 e2) -> do
                             (oldStep, oldState) <- get
                             put (oldStep, True)
