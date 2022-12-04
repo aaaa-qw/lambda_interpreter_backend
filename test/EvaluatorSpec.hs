@@ -60,7 +60,7 @@ module EvaluatorSpec (spec) where
                             (Id "x'3" ENoCnt))) ) ENoCnt
 
             it "Variable in Parameter Lists should not be substitued" $ do
-                replaceUnbound tableSym (getExpr "(lambda a c.a b c") `shouldBe`
+                replaceUnbound tableSym (getExpr "(lambda a c.a b c)") `shouldBe`
                     Fun ["a", "c"] (Id "a" (E (Fun ["a", "b"] (Id "a" (Id "b" ENoCnt)) ENoCnt) (Id "c" ENoCnt))) ENoCnt
 
 
