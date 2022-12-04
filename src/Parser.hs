@@ -1,25 +1,16 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# LANGUAGE DeriveGeneric #-}
 module Parser where
 
 import Text.Parsec
 import Data.Functor.Identity ( Identity )
 import Control.Applicative (liftA3, liftA2)
 import Text.Parsec.Error (errorMessages, messageString)
-import Data.Aeson
-import GHC.Generics ( Generic )
 
-data Program = Decl String Expr1 | ProgE Expr deriving (Eq, Show, Generic)
-data Expr = Id String Expr| E Expr1 Expr | Fun Params Expr1 Expr | ENoCnt deriving (Eq, Show, Generic)
+data Program = Decl String Expr1 | ProgE Expr deriving (Eq, Show)
+data Expr = Id String Expr| E Expr1 Expr | Fun Params Expr1 Expr | ENoCnt deriving (Eq, Show)
 type Expr1 = Expr
 type Params = [String]
 
-
-instance ToJSON Program where
-    toEncoding = genericToEncoding defaultOptions
-
-instance ToJSON Expr where
-    toEncoding = genericToEncoding defaultOptions
 
 
 ids :: ParsecT String u Identity [Char]
