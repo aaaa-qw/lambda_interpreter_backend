@@ -1,14 +1,26 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Parser where
 
 import Text.Parsec
 import Data.Functor.Identity ( Identity )
 import Control.Applicative (liftA3, liftA2)
+import Text.Parsec.Error (errorMessages, messageString)
+import Data.Aeson
+import GHC.Generics ( Generic )
 
-data Program = Decl String Expr1 | ProgE Expr deriving (Eq, Show)
-data Expr = Id String Expr| E Expr1 Expr | Fun Params Expr1 Expr | ENoCnt deriving (Eq, Show)
+data Program = Decl String Expr1 | ProgE Expr deriving (Eq, Show, Generic)
+data Expr = Id String Expr| E Expr1 Expr | Fun Params Expr1 Expr | ENoCnt deriving (Eq, Show, Generic)
 type Expr1 = Expr
 type Params = [String]
+
+
+instance ToJSON Program where
+    toEncoding = genericToEncoding defaultOptions
+
+instance ToJSON Expr where
+    toEncoding = genericToEncoding defaultOptions
+
 
 ids :: ParsecT String u Identity [Char]
 ids = (:) <$> (letter :: ParsecT String u Identity Char) <*> many alphaNum
@@ -23,7 +35,7 @@ functSym = choice [
     ]
 
 parseFunc :: ParsecT String u Identity Expr
-parseFunc = functSym >> liftA3 Fun parseParams (char '.' >> parseExpr1) parseExpr
+parseFunc = functSym >> liftA3 Fun parseParams (char '.' >> parseExpr1 <* char ')') parseExpr
 
 parseParams :: ParsecT String u Identity [String]
 parseParams = many (ids <* optWs)
@@ -32,19 +44,19 @@ parseId :: ParsecT String u Identity Expr
 parseId = liftA2 Id ids (optWs >> parseExpr)
 
 parseE :: ParsecT String u Identity Expr
-parseE = liftA2 E parseExpr1 parseExpr
+parseE = liftA2 E (parseExpr1 <* char ')') parseExpr
 
 parseExpr1 :: ParsecT String u Identity Expr
 parseExpr1 = choice [
         parseId,
-        char '(' >> (parseFunc <|> parseE)
+        char '(' >> (parseFunc <|> parseE) 
     ]
 
 parseExpr :: ParsecT String u Identity Expr
 parseExpr = choice [
         parseId,
         char '(' >> (parseFunc <|> parseE),
-        char ')' >> return ENoCnt,
+        lookAhead (char ')') >> return ENoCnt,
         eof >> return ENoCnt
     ]
 
@@ -57,8 +69,11 @@ parseProgram = choice [
         ProgE <$> parseExpr
     ]
 
-parse :: String -> Either ParseError Program
-parse = Text.Parsec.parse parseProgram ""
+type ErrorMessages = String
+parse :: String -> Either ErrorMessages Program
+parse str = case Text.Parsec.parse parseProgram "" str of 
+    Left parseError -> Left $ unwords (messageString <$> errorMessages parseError)
+    Right val -> Right val
 
 unParse :: Expr -> String
 unParse p = case p of
@@ -74,7 +89,7 @@ unParse p = case p of
         unParseE acc lst (E (E e1' ENoCnt) e2) = unParseE acc lst (E e1' e2)
         unParseE acc lst (E e1 e2) = unParseE (unParseE ["("] ")" e1:acc) lst e2
 
-        --Will remove unnecassary whitespace and parenthesis
+        --remove unnecassary whitespace and parenthesis
         formatter :: String -> String
         formatter = foldr op ""
             where
