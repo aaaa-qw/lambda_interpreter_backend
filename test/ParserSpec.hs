@@ -1,6 +1,7 @@
 module ParserSpec (spec) where
-    import Test.Hspec ( describe, it, shouldBe, Spec )
+    import Test.Hspec ( describe, it, shouldBe, Spec, shouldSatisfy )
     import Parser ( parse, Expr(ENoCnt, E, Fun, Id), Program(ProgE, Decl), unParse )
+    import Data.Either (isLeft)
     
     spec :: Spec
     spec = do
@@ -68,6 +69,18 @@ module ParserSpec (spec) where
                                 (Fun ["y"] (Id "x" (Id "s" (Id "y" ENoCnt))) (Id "c" ENoCnt))
                             (Id "def" ENoCnt))
                         )) ENoCnt))
+            
+            it "Missing close parentheses" $ do
+                parse "(a (b c)" `shouldSatisfy` isLeft
+
+            it "Missing open parentheses" $ do
+                parse "(a b c) d)a b)" `shouldSatisfy` isLeft
+            
+            it "Empty expression inside parenthesis fail to parse" $ do
+                parse "(a b()c)" `shouldSatisfy` isLeft
+
+            it "Function without body should fail to parse" $ do
+                parse "(lambda x.)" `shouldSatisfy` isLeft
             
         describe "Parser.unParse" $ do
             it "Unparsing empty expression" $ do 
