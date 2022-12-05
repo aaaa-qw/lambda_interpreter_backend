@@ -3,7 +3,7 @@
 module EvaluatorSpec (spec) where
 
     import Test.Hspec ( describe, it, shouldBe, Spec, shouldSatisfy)
-    import Evaluator (replaceUnbound, betaReduce, evaluate, EvaluationError(..))
+    import Evaluator (betaReduce, evaluate, EvaluationError(..), replaceUnboundVars, replaceDupFunParams)
     import Parser (parse)
     import Grammar (Program(..), Expr(..))
     import qualified Data.Map as Map
@@ -22,55 +22,70 @@ module EvaluatorSpec (spec) where
 
     spec :: Spec
     spec = do
-        describe "Evaluator.replaceUnbound" $ do
+        describe "Evaluator.replaceUnboundVars" $ do
             it "empty expression; no definition" $ do
-                replaceUnbound Map.empty (getExpr "") `shouldBe` ENoCnt
+                replaceUnboundVars Map.empty (getExpr "") `shouldBe` ENoCnt
 
             it "All unbound variable expression; no definition" $ do
-                replaceUnbound Map.empty (getExpr "(a b a)") `shouldBe` E (Id "x'0" (Id "x'1" (Id "x'2" ENoCnt))) ENoCnt
+                replaceUnboundVars Map.empty (getExpr "(a b a)") `shouldBe` E (Id "x'0" (Id "x'1" (Id "x'2" ENoCnt))) ENoCnt
 
             it "All bounded variable; no definition" $ do
-                replaceUnbound Map.empty (getExpr "(lambda x y z.z(lambda a z.a x y z))")
-                `shouldBe` Fun ["x", "y", "z"] (Id "z" (Fun ["a", "x0"] (Id "a" (Id "x" (Id "y" (Id "x0" ENoCnt)))) ENoCnt)) ENoCnt
+                replaceUnboundVars Map.empty (getExpr "(lambda x y z.z(lambda a z.a x y z))")
+                `shouldBe` Fun ["x", "y", "z"] (Id "z" (Fun ["a", "z"] (Id "a" (Id "x" (Id "y" (Id "z" ENoCnt)))) ENoCnt)) ENoCnt
 
             it "Bounded + Unbounded variable; no definition" $ do
-                replaceUnbound Map.empty (getExpr "(lambda x y.z(lambda a z.a x y z)x a)x y z")
+                replaceUnboundVars Map.empty (getExpr "(lambda x y.z(lambda a z.a x y z)x a)x y z")
                 `shouldBe`
                 Fun ["x", "y"] (Id "x'0" (Fun ["a", "z"] (Id "a" (Id "x" (Id "y" (Id "z" ENoCnt)))) (Id "x" (Id "x'1" ENoCnt)))) (Id "x'2" (Id "x'3" (Id "x'4" ENoCnt)))
 
             it "empty expression; with definition" $ do
-                replaceUnbound tableSym (getExpr "") `shouldBe` ENoCnt
+                replaceUnboundVars tableSym (getExpr "") `shouldBe` ENoCnt
 
             it "All bounded variable; with definition" $ do
-                replaceUnbound tableSym (getExpr "(lambda x y z.z(lambda a z.a x y z))")
-                `shouldBe` Fun ["x", "y", "z"] (Id "z" (Fun ["a", "x0"] (Id "a" (Id "x" (Id "y" (Id "x0" ENoCnt)))) ENoCnt)) ENoCnt
+                replaceUnboundVars tableSym (getExpr "(lambda x y z.z(lambda a z.a x y z))")
+                `shouldBe` Fun ["x", "y", "z"] (Id "z" (Fun ["a", "z"] (Id "a" (Id "x" (Id "y" (Id "z" ENoCnt)))) ENoCnt)) ENoCnt
 
             it "All unbound; all variable already defined in table symbol" $ do
-                replaceUnbound tableSym (getExpr "(a b a)") `shouldBe`
+                replaceUnboundVars tableSym (getExpr "(a b a)") `shouldBe`
                     E (E (Id "x'0" ENoCnt) (E (Fun ["a", "b"] (Id "a" (Id "b" ENoCnt)) ENoCnt) (E (Id "x'1" ENoCnt) ENoCnt))) ENoCnt
 
             it "All unbound; some variable not defined in table symbol" $ do
-                replaceUnbound tableSym (getExpr "(a b a d)") `shouldBe`
+                replaceUnboundVars tableSym (getExpr "(a b a d)") `shouldBe`
                     E (E (Id "x'0" ENoCnt) (E (Fun ["a", "b"] (Id "a" (Id "b" ENoCnt)) ENoCnt) (E (Id "x'1" ENoCnt) (Id "x'2" ENoCnt)))) ENoCnt
 
             it "Bounded + Unbounded; some unbounded already defined in table symbol" $ do
-                replaceUnbound tableSym (getExpr "(lambda x.x a c d)") `shouldBe`
+                replaceUnboundVars tableSym (getExpr "(lambda x.x a c d)") `shouldBe`
                     Fun ["x"] (Id "x" (E (Id "x'0" ENoCnt)
                         (E
-                            (Fun ["x0"] (Id "x'1" (Fun ["y"] (Id "x'2" (Id "x0" (Id "y" ENoCnt))) ENoCnt)) ENoCnt)
+                            (Fun ["x"] (Id "x'1" (Fun ["y"] (Id "x'2" (Id "x" (Id "y" ENoCnt))) ENoCnt)) ENoCnt)
                             (Id "x'3" ENoCnt))) ) ENoCnt
 
             it "Variable in Parameter Lists should not be substitued" $ do
-                replaceUnbound tableSym (getExpr "(lambda a c.a b c)") `shouldBe`
-                    Fun ["a", "c"] (Id "a" (E (Fun ["x0", "b"] (Id "x0" (Id "b" ENoCnt)) ENoCnt) (Id "c" ENoCnt))) ENoCnt
+                replaceUnboundVars tableSym (getExpr "(lambda a c.a b c)") `shouldBe`
+                    Fun ["a", "c"] (Id "a" (E (Fun ["a", "b"] (Id "a" (Id "b" ENoCnt)) ENoCnt) (Id "c" ENoCnt))) ENoCnt
 
             it "Complex nested function" $ do
-                replaceUnbound Map.empty (getExpr "(lambda x.(lambda x.(lambda x.(lambda x.x))))") `shouldBe`
-                    Fun ["x"] (Fun ["x0"] (Fun ["x1"] (Fun ["x2"] (Id "x2" ENoCnt) ENoCnt) ENoCnt) ENoCnt) ENoCnt
+                replaceUnboundVars Map.empty (getExpr "(lambda x.(lambda x.(lambda x.(lambda x.x))))") `shouldBe`
+                    Fun ["x"] (Fun ["x"] (Fun ["x"] (Fun ["x"] (Id "x" ENoCnt) ENoCnt) ENoCnt) ENoCnt) ENoCnt
             
             it "Function with duplicate parameter" $ do 
-                replaceUnbound Map.empty (getExpr "(lambda x x y x.x)") `shouldBe`
-                    Fun ["x"] (Fun ["x0"] (Fun ["y"] (Fun ["x1"] (Id "x1" ENoCnt) ENoCnt) ENoCnt) ENoCnt) ENoCnt
+                replaceUnboundVars Map.empty (getExpr "(lambda x x y x.x)") `shouldBe`
+                    Fun ["x", "x", "y", "x"] (Id "x" ENoCnt) ENoCnt
+
+        describe "Evaluator.replaceDupFunParams" $ do
+            it "Empty Expression" $ do
+                replaceDupFunParams (getExpr "") `shouldBe` ENoCnt
+            
+            it "No Function" $ do
+                replaceDupFunParams (getExpr "(a b c)") `shouldBe` E (Id "a" (Id "b" (Id "c" ENoCnt))) ENoCnt
+            
+            it "Function with distinct parameter" $ do
+                replaceDupFunParams (getExpr "((\\a b.a b)c)") `shouldBe`
+                    E (Fun ["a"] (Fun ["b"] (Id "a" (Id "b" ENoCnt)) ENoCnt) (Id "c" ENoCnt)) ENoCnt 
+
+            it "Duplicated parameter with inner function" $ do
+                replaceDupFunParams (getExpr "(\\a.a(\\a b.a b)c)") `shouldBe`
+                    Fun ["a"] (Id "a" (Fun ["y'0"] (Fun ["b"] (Id "y'0" (Id "b" ENoCnt) ) ENoCnt) (Id "c" ENoCnt))) ENoCnt
 
         describe "Evaluator.betaReduce" $ do
             it "Empty Expression" $ do
@@ -88,12 +103,12 @@ module EvaluatorSpec (spec) where
                     Right (Fun ["x"] (Id "x" (Id "c" ENoCnt)) ENoCnt)
 
             it "Function with variable as arguments" $ do
-                betaReduce 1000 (getExpr "((lambda x y.y x)a b)") `shouldBe`
+                betaReduce 1000 (getExpr "((lambda x.(lambda y.y x))a b)") `shouldBe`
                     Right (E (Id "b" (Id "a" ENoCnt)) ENoCnt)
 
             it "Function with Function as argument" $ do
-                betaReduce 100 (getExpr "((lambda x y.x y)(lambda x.a x)b)") `shouldBe`
-                    Right (E (Id "a" (Id "b" ENoCnt)) ENoCnt)
+                betaReduce 100 (getExpr "((lambda x.(lambda y.a x y))(lambda y.a y))") `shouldBe`
+                    Right (Fun ["y"] (Id "a" (Fun ["z'0"] (Id "a" (Id "z'0" ENoCnt)) (Id "y" ENoCnt))) ENoCnt)
 
             it "Contains not reducible function" $ do
                 betaReduce 100 (getExpr "(a b(lambda x.x)c)") `shouldBe`
@@ -119,15 +134,15 @@ module EvaluatorSpec (spec) where
                 betaReduce 1000 (getExpr "(lambda f.((lambda x.(f (x x)))(lambda x.(f (x x)))))(lambda x.x)") `shouldSatisfy` isLeft
 
             it "Irreducible Function that have reducible body" $ do
-                betaReduce 1000 (getExpr "(a(lambda x.(lambda y z.y z)b)c)") `shouldBe`
+                betaReduce 1000 (getExpr "(a(lambda x.(lambda y.(lambda z.y z))b)c)") `shouldBe`
                     Right(E (Id "a" (Fun ["x"] (Fun ["z"] (Id "b" (Id "z" ENoCnt)) ENoCnt) (Id "c" ENoCnt))) ENoCnt)
 
             it "Reducible Function that have reducible body" $ do
-                betaReduce 1000 (getExpr "((lambda x.(lambda y z.y z)b)c)") `shouldBe`
+                betaReduce 1000 (getExpr "((lambda x.(lambda y.(lambda z.y z))b)c)") `shouldBe`
                     Right(Fun ["z"] (Id "b" (Id "z" ENoCnt)) ENoCnt)
             
             it "Function application with argument enclosed in parenthesis" $ do
-                betaReduce 100 (getExpr "((lambda x a.a x)(b c)d)") `shouldBe`
+                betaReduce 100 (getExpr "((lambda x.(lambda a.a x))(b c)d)") `shouldBe`
                     Right (E (Id "d" (E (Id "b" (Id "c" ENoCnt)) ENoCnt)) ENoCnt) 
             
             it "Function application with body containing parentheses" $ do
