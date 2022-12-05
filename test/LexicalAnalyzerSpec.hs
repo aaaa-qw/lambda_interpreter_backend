@@ -13,7 +13,7 @@ module LexicalAnalyzerSpec (spec) where
                 autoParentheses "a b(lambda x .x) d" `shouldBe` "(a b(lambda x.x)d)"
             
             it "should remove unnecessary whitespace" $ do
-                autoParentheses "a  b  (  lambda   x   y   .   d ( e f ) s    t     )     g           " `shouldBe` "(a b(lambda x y.d(e f)s t)g)"
+                autoParentheses "a  bc  (  lambda   x   y   .   d ( e f ) s    t     )     g           " `shouldBe` "(a bc(lambda x y.d(e f)s t)g)"
             
             it "function with \"\\\" " $ do
                 autoParentheses "a  b  (\\   x   y   .   d ( e f ) s    t     )     g           " `shouldBe` "(a b(\\x y.d(e f)s t)g)"
