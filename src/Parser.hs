@@ -5,13 +5,7 @@ import Text.Parsec
 import Data.Functor.Identity ( Identity )
 import Control.Applicative (liftA3, liftA2)
 import Text.Parsec.Error (errorMessages, messageString)
-
-data Program = Decl String Expr1 | ProgE Expr deriving (Eq, Show)
-data Expr = Id String Expr| E Expr1 Expr | Fun Params Expr1 Expr | ENoCnt deriving (Eq, Show)
-type Expr1 = Expr
-type Params = [String]
-
-
+import Grammar ( Expr(..), Program(..) ) 
 
 ids :: ParsecT String u Identity [Char]
 ids = (:) <$> (letter :: ParsecT String u Identity Char) <*> many alphaNum
@@ -74,7 +68,7 @@ unParse p = case p of
         unParseE :: [String] -> String -> Expr -> String
         unParseE acc last' ENoCnt = (formatter . unwords . reverse) (last':acc)
         unParseE acc lst (Id val e2) = unParseE (val:acc) lst e2
-        unParseE acc lst (Fun params body e2) = unParseE (unParseE [[]] ")" body : "." : ("(\955" ++ unwords params) : acc) lst e2
+        unParseE acc lst (Fun params body e2) = unParseE (unParseE [[]] ")" body : "." : ("(lambda " ++ unwords params) : acc) lst e2
         unParseE acc lst (E (Id val ENoCnt) e2) = unParseE (val:acc) lst e2
         unParseE acc lst (E (Fun params body ENoCnt) e2) = unParseE acc lst (Fun params body e2)
         unParseE acc lst (E (E e1' ENoCnt) e2) = unParseE acc lst (E e1' e2)

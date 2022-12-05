@@ -1,6 +1,7 @@
 module ParserSpec (spec) where
     import Test.Hspec ( describe, it, shouldBe, Spec, shouldSatisfy )
-    import Parser ( parse, Expr(ENoCnt, E, Fun, Id), Program(ProgE, Decl), unParse )
+    import Parser ( parse, unParse )
+    import Grammar ( Expr(ENoCnt, Fun, E, Id), Program(ProgE, Decl) )
     import Data.Either (isLeft)
     
     spec :: Spec
@@ -82,6 +83,9 @@ module ParserSpec (spec) where
             it "Function without body should fail to parse" $ do
                 parse "(lambda x.)" `shouldSatisfy` isLeft
             
+            it "Illegal variabel" $ do
+                parse "(x'1 a)" `shouldSatisfy` isLeft
+
         describe "Parser.unParse" $ do
             it "Unparsing empty expression" $ do 
                 unParse ENoCnt `shouldBe` ""
@@ -102,10 +106,14 @@ module ParserSpec (spec) where
             it "Unparsing expression with important parenthesis" $ do
                 unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" ENoCnt))) `shouldBe` "a(b c)d"
             
-            it "Unparsing expression with unnecessary parenthesis" $ do
+            it "Unparsing expression with unnecessary parenthesis around variable" $ do
                 unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" (E (Id "e" ENoCnt) (Id "f" ENoCnt))))) `shouldBe` 
                     "a(b c)d e f"
             
-            it "Unparsing expression with unnecessary parenthesis II" $ do
+            it "Unparsing expression with unnecessary parenthesis around expression enclosed in parenthesis" $ do
                 unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" (E (E (Id "e" ENoCnt) ENoCnt) (Id "f" ENoCnt))))) `shouldBe` 
                     "a(b c)d e f"
+            
+            it "Unparsing expression with unnecessary parenthesis around function" $ do
+                unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" (E (Fun ["a"] (Id "a" ENoCnt) ENoCnt) (Id "f" ENoCnt))))) `shouldBe` 
+                    "a(b c)d(\955a.a)f"
