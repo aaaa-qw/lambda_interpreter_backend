@@ -11,6 +11,23 @@ module Evaluator (  betaReduce,
     import qualified Data.Map as Map
     import qualified Data.List as L
 
+    type Message = String
+    data EvaluationError = ExceedMaxEval Message | VariableAlreadyDefined deriving (Eq, Show)
+
+    evaluate :: Int -> Map String Expr -> Program -> Either EvaluationError Program
+    evaluate maxEval tableSym program =
+        case program of
+
+            (Decl newVar nonEmptyExpr) -> case Map.lookup newVar tableSym of
+                Just _ -> Left VariableAlreadyDefined
+                Nothing -> case (betaReduce maxEval . replaceDupFunParams . replaceUnboundVars tableSym) nonEmptyExpr of
+                    Right expr' -> Right $ Decl newVar expr'
+                    Left msg -> Left (ExceedMaxEval msg)
+
+            (ProgE expr) -> case (betaReduce maxEval . replaceDupFunParams . replaceUnboundVars tableSym) expr of
+                Right expr' -> Right $ ProgE expr'
+                Left msg -> Left (ExceedMaxEval msg)
+
     replaceUnboundVars :: Map String Expr -> Expr -> Expr
     replaceUnboundVars tableSym expression = evalState (replace' expression) (0, [])
         where
@@ -95,26 +112,6 @@ module Evaluator (  betaReduce,
                         
                         Fun ["y'" ++ show numVar] body' <$> replaceBounded nextExpr
 
-
-    type Message = String
-    data EvaluationError = ExceedMaxEval Message | VariableAlreadyDefined deriving (Eq, Show)
-
-    evaluate :: Int -> Map String Expr -> Program -> Either EvaluationError Program
-    evaluate maxEval tableSym program =
-        case program of
-
-            (Decl newVar nonEmptyExpr) -> case Map.lookup newVar tableSym of
-                Just _ -> Left VariableAlreadyDefined
-                Nothing -> case (betaReduce maxEval . replaceDupFunParams . replaceUnboundVars tableSym) nonEmptyExpr of
-                    Right expr' -> Right $ Decl newVar expr'
-                    Left msg -> Left (ExceedMaxEval msg)
-
-            (ProgE expr) -> case (betaReduce maxEval . replaceDupFunParams . replaceUnboundVars tableSym) expr of
-                Right expr' -> Right $ ProgE expr'
-                Left msg -> Left (ExceedMaxEval msg)
-
-
-
     type IsReduceable = Bool
     betaReduce :: Int -> Expr -> Either Message Expr
     betaReduce maxEval expression = evalState (betaReduce' expression) (0, True, 0)
@@ -197,12 +194,12 @@ module Evaluator (  betaReduce,
                                         put (step + 1, isReduce, uniqueNum')
                                         betaReduce' (E (subs x e2' body) (outer e2))
                                         where
-                                            subs x repl (Id val b) = if x == val then merge repl (subs x repl b)
-                                                                        else Id val (subs x repl b)
+                                            subs x' repl (Id val b) = if x' == val then merge repl (subs x' repl b)
+                                                                        else Id val (subs x' repl b)
                                             subs _ _ ENoCnt = ENoCnt
-                                            subs x repl (E e1 e2') = merge (subs x repl e1) (subs x repl e2')
-                                            subs x repl (Fun ps b e2') = if x `elem` ps then Fun ps b (subs x repl e2')
-                                                                        else Fun ps (subs x repl b) (subs x repl e2')
+                                            subs x' repl (E e1 e2') = merge (subs x' repl e1) (subs x' repl e2')
+                                            subs x' repl (Fun ps b e2') = if x' `elem` ps then Fun ps b (subs x' repl e2')
+                                                                        else Fun ps (subs x' repl b) (subs x' repl e2')
 
                                             inner (Id val _) = Id val ENoCnt
                                             inner (E e1 _) = e1
@@ -213,7 +210,7 @@ module Evaluator (  betaReduce,
                                             outer (Fun _ _ e2') = e2'
 
                                             getBoundedVars :: [String] -> Expr -> [String]
-                                            getBoundedVars acc (Fun [x] body' _) = getBoundedVars (x:acc) body'
+                                            getBoundedVars acc (Fun [x'] body' _) = getBoundedVars (x':acc) body'
                                             getBoundedVars acc _ = acc
 
                                             replDupBounded :: [String] -> Expr -> State (Int, Map String String) Expr
