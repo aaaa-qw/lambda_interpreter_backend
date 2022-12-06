@@ -1,6 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
-
-import Lib
-
-main :: IO ()
-main = someFunc
+    import Network.Wai.Handler.Warp (run)
+    import WebService (app1)
+    
+    main :: IO ()
+    main = run 8080 app1
