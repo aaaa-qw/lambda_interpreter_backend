@@ -1,10 +1,9 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module Parser where
+module Parser (Parser.parse, unParse) where
 
 import Text.Parsec
 import Data.Functor.Identity ( Identity )
 import Control.Applicative (liftA3, liftA2)
-import Text.Parsec.Error (errorMessages, messageString)
 import Grammar ( Expr(..), Program(..) ) 
 
 ids :: ParsecT String u Identity [Char]
@@ -57,7 +56,7 @@ parseProgram = choice [
 type ErrorMessages = String
 parse :: String -> Either ErrorMessages Program
 parse str = case Text.Parsec.parse parseProgram "" str of 
-    Left parseError -> Left $ show parseError
+    Left _ -> Left "Parsing error"
     Right val -> Right val
 
 unParse :: Expr -> String
@@ -68,7 +67,7 @@ unParse p = case p of
         unParseE :: [String] -> String -> Expr -> String
         unParseE acc last' ENoCnt = (formatter . unwords . reverse) (last':acc)
         unParseE acc lst (Id val e2) = unParseE (val:acc) lst e2
-        unParseE acc lst (Fun params body e2) = unParseE (unParseE [[]] ")" body : "." : ("(\\" ++ unwords params) : acc) lst e2
+        unParseE acc lst (Fun params body e2) = unParseE (unParseE [[]] ")" body : "." : ("(\955" ++ unwords params) : acc) lst e2
         unParseE acc lst (E (Id val ENoCnt) e2) = unParseE (val:acc) lst e2
         unParseE acc lst (E (Fun params body ENoCnt) e2) = unParseE acc lst (Fun params body e2)
         unParseE acc lst (E (E e1' ENoCnt) e2) = unParseE acc lst (E e1' e2)
@@ -80,6 +79,6 @@ unParse p = case p of
             where
                 op :: Char -> String -> String
                 op ' ' [] = []
-                op ' ' b = if (not . null) b && head b `elem` " ().\\" then b else ' ':b
+                op ' ' b = if (not . null) b && head b `elem` " ().\955" then b else ' ':b
                 op s b = if s `elem` "().\955" then s:dropWhile (==' ') b
                             else s:b

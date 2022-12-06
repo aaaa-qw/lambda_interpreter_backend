@@ -94,14 +94,14 @@ module ParserSpec (spec) where
                 unParse (Id "a" (Id "b" (Id "c" ENoCnt))) `shouldBe` "a b c"
             
             it "Unparsing simple function only" $ do
-                unParse (Fun ["x"] (Id "x" (Id "a" ENoCnt)) ENoCnt) `shouldBe` "(\\x.x a)"
+                unParse (Fun ["x"] (Id "x" (Id "a" ENoCnt)) ENoCnt) `shouldBe` "(\955x.x a)"
             
             it "Unparsing nested function" $ do
                 unParse (Fun ["x", "y"] (Id "x" (Fun ["a"] (Id "a" (Id "y" ENoCnt)) ENoCnt)) ENoCnt) `shouldBe`
-                    "(\\x y.x(\\a.a y))"
+                    "(\955x y.x(\955a.a y))"
             
             it "Unparsing function with application" $ do
-                unParse (Id "a" (Fun ["x"] (Id "x" ENoCnt) (Id "b" ENoCnt))) `shouldBe` "a(\\x.x)b"
+                unParse (Id "a" (Fun ["x"] (Id "x" ENoCnt) (Id "b" ENoCnt))) `shouldBe` "a(\955x.x)b"
             
             it "Unparsing expression with important parenthesis" $ do
                 unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" ENoCnt))) `shouldBe` "a(b c)d"
@@ -116,4 +116,4 @@ module ParserSpec (spec) where
             
             it "Unparsing expression with unnecessary parenthesis around function" $ do
                 unParse (Id "a" (E (Id "b" (Id "c" ENoCnt)) (Id "d" (E (Fun ["a"] (Id "a" ENoCnt) ENoCnt) (Id "f" ENoCnt))))) `shouldBe` 
-                    "a(b c)d(\\a.a)f"
+                    "a(b c)d(\955a.a)f"
