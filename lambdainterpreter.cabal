@@ -26,19 +26,26 @@ source-repository head
 library
   exposed-modules:
       Evaluator
+      Grammar
+      Interpreter
       LexicalAnalyzer
-      Lib
       Parser
+      TableSymbolParser
+      WebService
   other-modules:
       Paths_lambdainterpreter
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , containers
     , mtl
     , parsec
+    , servant
+    , servant-server
+    , wai
   default-language: Haskell2010
 
 executable lambdainterpreter-exe
@@ -51,6 +58,7 @@ executable lambdainterpreter-exe
   build-depends:
       base >=4.7 && <5
     , lambdainterpreter
+    , warp
   default-language: Haskell2010
 
 test-suite lambdainterpreter-test
@@ -60,6 +68,7 @@ test-suite lambdainterpreter-test
       EvaluatorSpec
       LexicalAnalyzerSpec
       ParserSpec
+      TableSymbolParserSpec
       Paths_lambdainterpreter
   hs-source-dirs:
       test
