@@ -55,6 +55,8 @@ executables:
     dependencies:
     - lambdainterpreter
     - warp
+    - wai
+    - wai-cors
 
 tests:
   lambdainterpreter-test:
