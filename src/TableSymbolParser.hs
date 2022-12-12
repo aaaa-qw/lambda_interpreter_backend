@@ -15,7 +15,8 @@ optWs = optional (char ' ')
 functSym :: ParsecT String u Identity String
 functSym = choice [
         string "lambda" <* char ' ',
-        string "\\"
+        string "\\",
+        string "\955"
     ]
 
 parseFunc :: ParsecT String u Identity Expr
