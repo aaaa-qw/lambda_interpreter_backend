@@ -13,6 +13,6 @@ module Main (main) where
             policy = simpleCorsResourcePolicy
                 { 
                     corsMethods = [ "GET", "POST", "PUT", "OPTIONS" ],
-                    corsOrigins = Just (["http://localhost:3000", "https://lambdainterpreterfrontend-production.up.railway.app/"], True),
+                    corsOrigins = Just (["http://localhost:3000", "https://lambdainterpreterfrontend-production-42ea.up.railway.app/"], True),
                     corsRequestHeaders = [ "content-type" ]
                 }
