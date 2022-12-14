@@ -12,7 +12,7 @@ In local: <br/>
 In production: <br/>
 ```https://lambdainterpreterbackend-production-db10.up.railway.app/evaluate```
 
-The endpoint is only accepting POST request with JSON as request body with the format:
+The endpoint is only accepting POST request with JSON as request body with format:
 
        {
            'expression':[LAMBDA_EXPRESSION],
