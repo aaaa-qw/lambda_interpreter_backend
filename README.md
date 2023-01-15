@@ -114,3 +114,6 @@ The following diagram show how lambda expression is evaluated
 
 * Unparser<br/>
 After performing alpha and beta reduction, as the expression is still in grammar form, the interpreter will transofrom the grammar back to the string format.
+
+# License
+Distributed under the MIT License. See [LICENSE](https://github.com/aaaa-qw/lambda_interpreter_backend/blob/main/LICENSE) for more information.
