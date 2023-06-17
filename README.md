@@ -4,7 +4,7 @@
 
 This interpreter is using [servant](https://docs.servant.dev/en/stable/) as the web server.
 
-There is only one endpoint in this interpreter:
+There is one endpoint in this interpreter:
 
 In local: <br/>
 ```http://localhost:8080/evaluate```
