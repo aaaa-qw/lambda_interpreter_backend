@@ -43,6 +43,7 @@ library:
     - aeson
     - servant
     - servant-server
+    - bytestring
 
 executables:
   lambdainterpreter-exe:
@@ -57,6 +58,7 @@ executables:
     - warp
     - wai
     - wai-cors
+    - bytestring
 
 tests:
   lambdainterpreter-test:
